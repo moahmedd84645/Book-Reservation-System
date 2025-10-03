@@ -1,0 +1,5 @@
+{
+  "name": "Book Reservation System",
+  "description": "A simple web application to manage student book reservations. It allows adding new reservations with validation, prevents duplicates, and enables exporting all records to an Excel file.",
+  "requestFramePermissions": []
+}
