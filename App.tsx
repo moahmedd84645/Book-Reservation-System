@@ -12,19 +12,24 @@ function App() {
   const [studentCounter, setStudentCounter] = useLocalStorage<number>('studentCounter', 0);
   const [prefix, setPrefix] = useLocalStorage<string>('studentCodePrefix', 'MTD25');
 
-  const handleAddStudent = (newStudent: Omit<Student, 'timestamp' | 'studentCode'>) => {
+  const handleAddStudent = (newStudentData: Omit<Student, 'studentCode'>) => {
     const nextId = studentCounter + 1;
     const paddedId = String(nextId).padStart(2, '0');
     const newStudentCode = `${prefix.trim() || 'CODE'}-${paddedId}`;
 
-    const studentWithTimestamp: Student = {
-      ...newStudent,
+    const newStudent: Student = {
+      ...newStudentData,
       studentCode: newStudentCode,
-      timestamp: new Date().toISOString(),
     };
     
-    setStudents(prev => [...prev, studentWithTimestamp]);
+    setStudents(prev => [...prev, newStudent]);
     setStudentCounter(nextId);
+  };
+
+  const handleDeleteStudent = (studentCodeToDelete: string) => {
+    if (window.confirm("هل أنت متأكد من رغبتك في حذف هذا الطالب؟ لا يمكن التراجع عن هذا الإجراء.")) {
+        setStudents(prev => prev.filter(student => student.studentCode !== studentCodeToDelete));
+    }
   };
 
   const handleExport = () => {
@@ -80,7 +85,7 @@ function App() {
                     <span className="mr-2">تصدير إلى Excel</span>
                 </button>
              </div>
-             <StudentsTable students={students} />
+             <StudentsTable students={students} onDeleteStudent={handleDeleteStudent} />
           </section>
         </main>
 
