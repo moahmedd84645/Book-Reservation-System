@@ -47,3 +47,10 @@ export const AlertTriangleIcon = () => (
         <line x1="12" x2="12.01" y1="17" y2="17"></line>
     </svg>
 );
+
+export const TagIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 2H2v10l9.29 9.29a1 1 0 0 0 1.42 0l7.58-7.58a1 1 0 0 0 0-1.42L12 2z"></path>
+        <path d="M7 7h.01"></path>
+    </svg>
+);

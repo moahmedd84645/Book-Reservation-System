@@ -1,22 +1,21 @@
+
 import React from 'react';
 import { Student } from './types';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { exportToExcel } from './services/xlsxService';
 import StudentForm from './components/ReservationForm';
 import StudentsTable from './components/ReservationsTable';
-import { DownloadIcon } from './components/Icons';
-
-// يمكنك تغيير هذا البادئة حسب حاجتك
-const STUDENT_CODE_PREFIX = 'MTD25';
+import { DownloadIcon, TagIcon } from './components/Icons';
 
 function App() {
   const [students, setStudents] = useLocalStorage<Student[]>('students', []);
   const [studentCounter, setStudentCounter] = useLocalStorage<number>('studentCounter', 0);
+  const [prefix, setPrefix] = useLocalStorage<string>('studentCodePrefix', 'MTD25');
 
   const handleAddStudent = (newStudent: Omit<Student, 'timestamp' | 'studentCode'>) => {
     const nextId = studentCounter + 1;
     const paddedId = String(nextId).padStart(2, '0');
-    const newStudentCode = `${STUDENT_CODE_PREFIX}-${paddedId}`;
+    const newStudentCode = `${prefix.trim() || 'CODE'}-${paddedId}`;
 
     const studentWithTimestamp: Student = {
       ...newStudent,
@@ -43,7 +42,27 @@ function App() {
       <div className="container mx-auto p-4 sm:p-6 lg:p-8">
         <header className="text-center mb-8">
           <h1 className="text-4xl font-extrabold text-gray-800 tracking-tight">نظام إدخال بيانات الطلاب</h1>
-          <p className="mt-2 text-lg text-gray-600">أضف بيانات الطلاب وقم بتصديرها بسهولة.</p>
+          <p className="mt-2 text-lg text-gray-600">أدخل بادئة الكود، ثم أضف بيانات الطلاب وقم بتصديرها بسهولة.</p>
+
+          <div className="mt-6 max-w-sm mx-auto">
+            <label htmlFor="prefix-input" className="block text-sm font-medium text-gray-700 mb-2">
+              بادئة الكود (Prefix)
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
+                <TagIcon />
+              </div>
+              <input
+                id="prefix-input"
+                type="text"
+                value={prefix}
+                onChange={(e) => setPrefix(e.target.value)}
+                className="w-full pr-12 pl-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors text-center"
+                placeholder="مثال: MTD25"
+                aria-label="بادئة كود الطالب"
+              />
+            </div>
+          </div>
         </header>
 
         <main className="flex flex-col items-center gap-8">
