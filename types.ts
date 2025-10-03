@@ -1,7 +1,6 @@
-
-export interface Reservation {
+export interface Student {
   studentName: string;
   phoneNumber: string;
-  studentId: string;
+  studentCode: string;
   timestamp: string;
 }

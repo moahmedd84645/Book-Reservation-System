@@ -1,17 +1,14 @@
-
 import React, { useState } from 'react';
-import { Reservation } from '../types';
-import { UserIcon, PhoneIcon, IdCardIcon, PlusCircleIcon, AlertTriangleIcon } from './Icons';
+import { Student } from '../types';
+import { UserIcon, PhoneIcon, PlusCircleIcon, AlertTriangleIcon } from './Icons';
 
-interface ReservationFormProps {
-  onAddReservation: (reservation: Omit<Reservation, 'timestamp'>) => void;
-  error: string | null;
+interface StudentFormProps {
+  onAddStudent: (student: Omit<Student, 'timestamp' | 'studentCode'>) => void;
 }
 
-const ReservationForm: React.FC<ReservationFormProps> = ({ onAddReservation, error }) => {
+const StudentForm: React.FC<StudentFormProps> = ({ onAddStudent }) => {
   const [studentName, setStudentName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [studentId, setStudentId] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -25,21 +22,16 @@ const ReservationForm: React.FC<ReservationFormProps> = ({ onAddReservation, err
       setValidationError('رقم التليفون يجب أن يتكون من 7 إلى 15 رقماً.');
       return;
     }
-    if (!/^[a-zA-Z0-9]+$/.test(studentId)) {
-      setValidationError('كود الطالب يجب أن يحتوي على حروف وأرقام فقط.');
-      return;
-    }
 
     setValidationError(null);
-    onAddReservation({ studentName, phoneNumber, studentId });
+    onAddStudent({ studentName, phoneNumber });
     setStudentName('');
     setPhoneNumber('');
-    setStudentId('');
   };
 
   return (
     <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-lg">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">إضافة حجز جديد</h2>
+      <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">إضافة طالب جديد</h2>
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="relative">
           <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
@@ -65,23 +57,11 @@ const ReservationForm: React.FC<ReservationFormProps> = ({ onAddReservation, err
             className="w-full pr-12 pl-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
           />
         </div>
-        <div className="relative">
-          <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
-            <IdCardIcon />
-          </div>
-          <input
-            type="text"
-            placeholder="كود الطالب"
-            value={studentId}
-            onChange={(e) => setStudentId(e.target.value)}
-            className="w-full pr-12 pl-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-          />
-        </div>
 
-        {(validationError || error) && (
+        {validationError && (
             <div className="bg-red-100 border-r-4 border-red-500 text-red-700 p-4 rounded-lg flex items-center" role="alert">
                 <AlertTriangleIcon />
-                <p className="mr-3">{validationError || error}</p>
+                <p className="mr-3">{validationError}</p>
             </div>
         )}
 
@@ -90,11 +70,11 @@ const ReservationForm: React.FC<ReservationFormProps> = ({ onAddReservation, err
           className="w-full flex items-center justify-center bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-transform transform hover:scale-105"
         >
           <PlusCircleIcon />
-          <span className="mr-2">إضافة الحجز</span>
+          <span className="mr-2">إضافة الطالب</span>
         </button>
       </form>
     </div>
   );
 };
 
-export default ReservationForm;
+export default StudentForm;
