@@ -1,16 +1,17 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Student } from './types';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { exportToExcel } from './services/xlsxService';
 import StudentForm from './components/ReservationForm';
 import StudentsTable from './components/ReservationsTable';
-import { DownloadIcon, TagIcon } from './components/Icons';
+import { DownloadIcon, TagIcon, SearchIcon } from './components/Icons';
 
 function App() {
   const [students, setStudents] = useLocalStorage<Student[]>('students', []);
   const [studentCounter, setStudentCounter] = useLocalStorage<number>('studentCounter', 0);
   const [prefix, setPrefix] = useLocalStorage<string>('studentCodePrefix', 'MTD25');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleAddStudent = (newStudentData: Omit<Student, 'studentCode'>) => {
     const nextId = studentCounter + 1;
@@ -41,6 +42,11 @@ function App() {
     const sortedForExport = [...students].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     exportToExcel(sortedForExport, 'بيانات_الطلاب');
   };
+
+  const filteredStudents = students.filter(student => 
+    student.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    student.studentCode.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="bg-gray-100 min-h-screen">
@@ -74,7 +80,7 @@ function App() {
           <StudentForm onAddStudent={handleAddStudent} />
 
           <section className="w-full max-w-5xl bg-white p-6 rounded-xl shadow-lg">
-             <div className="flex justify-between items-center mb-6">
+             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold text-gray-800">قائمة الطلاب</h2>
                 <button
                     onClick={handleExport}
@@ -85,7 +91,20 @@ function App() {
                     <span className="mr-2">تصدير إلى Excel</span>
                 </button>
              </div>
-             <StudentsTable students={students} onDeleteStudent={handleDeleteStudent} />
+             <div className="mb-4 relative">
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
+                    <SearchIcon />
+                </div>
+                <input
+                    type="text"
+                    placeholder="ابحث بالاسم أو الكود..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pr-10 pl-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                    aria-label="ابحث عن طالب"
+                />
+             </div>
+             <StudentsTable students={filteredStudents} onDeleteStudent={handleDeleteStudent} />
           </section>
         </main>
 
