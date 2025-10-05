@@ -10,26 +10,43 @@ import { DownloadIcon, TagIcon, SearchIcon, UsersIcon, UploadIcon } from './comp
 // Helper function to format phone numbers with +20 country code
 const formatPhoneNumber = (phone: string): string => {
     const trimmedPhone = phone.trim();
-    // If it already has a `+`, assume it's correctly formatted and we don't need to process it further.
+
+    // 1. If it already starts with a `+`, assume it's correctly formatted internationally.
     if (trimmedPhone.startsWith('+')) {
-        return trimmedPhone;
+        // Just to be safe, clean out any non-digit characters after the +
+        return '+' + trimmedPhone.substring(1).replace(/\D/g, '');
     }
-    // Remove all non-numeric characters
+
+    // 2. Remove all non-numeric characters for processing.
     let numericPhone = trimmedPhone.replace(/\D/g, '');
     
-    // If number now starts with the country code, it's likely an international number without the `+`.
-    // E.g. user entered "20 101 234 5678"
-    if (numericPhone.startsWith('20')) {
-        // Just add the plus and we're done.
-        return `+${numericPhone}`;
+    // 3. Handle international prefix `00`.
+    if (numericPhone.startsWith('0020')) {
+        // e.g., 002010... -> +2010...
+        return `+${numericPhone.substring(2)}`;
     }
-    
-    // Handle local numbers that start with 0 (e.g., 010, 011)
+
+    // 4. Handle local numbers starting with `0`. This is the most common input.
     if (numericPhone.startsWith('0')) {
-        numericPhone = numericPhone.substring(1);
+        const numberAfterZero = numericPhone.substring(1);
+        // Special check: if the number after '0' already starts with the country code,
+        // it's likely a user error (e.g., entered 0201... instead of just 201...).
+        // In this case, we treat it as if they entered the international number without the `+`.
+        if (numberAfterZero.startsWith('20')) {
+             return `+${numberAfterZero}`; // e.g., 0201... -> +201...
+        } else {
+             // Standard case: it's a local number.
+             return `+20${numberAfterZero}`; // e.g., 010... -> +2010...
+        }
+    }
+
+    // 5. Handle numbers that already include the country code but no prefix.
+    if (numericPhone.startsWith('20')) {
+        return `+${numericPhone}`; // e.g., 2010... -> +2010...
     }
     
-    return `+20${numericPhone}`;
+    // 6. Fallback: assume it's a local number without a leading `0`.
+    return `+20${numericPhone}`; // e.g., 10... -> +2010...
 };
 
 function App() {
