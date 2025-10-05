@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Student } from './types';
 import { useLocalStorage } from './hooks/useLocalStorage';
@@ -7,6 +6,22 @@ import StudentForm from './components/ReservationForm';
 import StudentsTable from './components/ReservationsTable';
 import BulkAddModal from './components/BulkAddModal';
 import { DownloadIcon, TagIcon, SearchIcon, UsersIcon, UploadIcon } from './components/Icons';
+
+// Helper function to format phone numbers with +20 country code
+const formatPhoneNumber = (phone: string): string => {
+    const trimmedPhone = phone.trim();
+    // If it already has a `+`, assume it's correctly formatted
+    if (trimmedPhone.startsWith('+')) {
+        return trimmedPhone;
+    }
+    // Remove all non-numeric characters
+    let numericPhone = trimmedPhone.replace(/\D/g, '');
+    // Handle local numbers that start with 0 (e.g., 010, 011)
+    if (numericPhone.startsWith('0')) {
+        numericPhone = numericPhone.substring(1);
+    }
+    return `+20${numericPhone}`;
+};
 
 function App() {
   const [students, setStudents] = useLocalStorage<Student[]>('students', []);
@@ -26,7 +41,8 @@ function App() {
   };
 
   const handleAddStudent = (newStudentData: Omit<Student, 'studentCode'>) => {
-    if (isDuplicate({ studentName: newStudentData.studentName, phoneNumber: newStudentData.phoneNumber }, [])) {
+    const formattedPhone = formatPhoneNumber(newStudentData.phoneNumber);
+    if (isDuplicate({ studentName: newStudentData.studentName, phoneNumber: formattedPhone }, [])) {
         alert("بيانات مكررة: هذا الطالب موجود بالفعل بنفس الاسم ورقم التليفون.");
         return;
     }
@@ -37,6 +53,7 @@ function App() {
 
     const newStudent: Student = {
       ...newStudentData,
+      phoneNumber: formattedPhone,
       studentCode: newStudentCode,
     };
     
@@ -51,11 +68,15 @@ function App() {
     const newStudents: Student[] = [];
 
     studentsToAdd.forEach(studentData => {
-        if (!studentData.studentName || !/^\d{7,15}$/.test(studentData.phoneNumber)) {
+        const phoneDigits = studentData.phoneNumber.replace(/\D/g, '');
+        if (!studentData.studentName || phoneDigits.length < 7 || phoneDigits.length > 15) {
             skippedCount++;
             return;
         }
-        if (isDuplicate({ studentName: studentData.studentName, phoneNumber: studentData.phoneNumber }, newStudents)) {
+
+        const formattedPhone = formatPhoneNumber(studentData.phoneNumber);
+
+        if (isDuplicate({ studentName: studentData.studentName, phoneNumber: formattedPhone }, newStudents)) {
             skippedCount++;
             return;
         }
@@ -65,6 +86,7 @@ function App() {
         const newStudentCode = `${prefix.trim() || 'CODE'}-${paddedId}`;
         newStudents.push({
             ...studentData,
+            phoneNumber: formattedPhone,
             studentCode: newStudentCode,
             timestamp: new Date().toISOString()
         });

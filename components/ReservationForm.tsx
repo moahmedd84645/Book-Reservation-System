@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Student } from '../types';
 import { UserIcon, PhoneIcon, PlusCircleIcon, AlertTriangleIcon, CalendarIcon } from './Icons';
@@ -38,8 +37,9 @@ const StudentForm: React.FC<StudentFormProps> = ({ onAddStudent }) => {
       setValidationError('اسم الطالب لا يمكن أن يكون فارغاً.');
       return;
     }
-    if (!/^\d{7,15}$/.test(phoneNumber)) {
-      setValidationError('رقم التليفون يجب أن يتكون من 7 إلى 15 رقماً.');
+    const phoneDigits = phoneNumber.replace(/\D/g, '');
+    if (phoneDigits.length < 7 || phoneDigits.length > 15) {
+      setValidationError('رقم التليفون يجب أن يحتوي على 7 إلى 15 رقماً.');
       return;
     }
     if (!timestamp) {

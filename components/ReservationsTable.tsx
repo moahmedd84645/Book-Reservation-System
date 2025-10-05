@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Student } from '../types';
 import { TrashIcon, WhatsAppIcon } from './Icons';
@@ -39,7 +38,7 @@ const StudentsTable: React.FC<StudentsTableProps> = ({ students, onDeleteStudent
               <td className="py-4 px-6 whitespace-nowrap text-center">
                 <div className="flex items-center justify-center gap-2">
                     <a
-                        href={`https://wa.me/${student.phoneNumber}`}
+                        href={`https://wa.me/${student.phoneNumber.replace(/\+/g, '')}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-green-600 hover:text-green-800 transition-colors p-2 rounded-full hover:bg-green-100"
