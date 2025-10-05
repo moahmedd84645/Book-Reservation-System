@@ -10,16 +10,25 @@ import { DownloadIcon, TagIcon, SearchIcon, UsersIcon, UploadIcon } from './comp
 // Helper function to format phone numbers with +20 country code
 const formatPhoneNumber = (phone: string): string => {
     const trimmedPhone = phone.trim();
-    // If it already has a `+`, assume it's correctly formatted
+    // If it already has a `+`, assume it's correctly formatted and we don't need to process it further.
     if (trimmedPhone.startsWith('+')) {
         return trimmedPhone;
     }
     // Remove all non-numeric characters
     let numericPhone = trimmedPhone.replace(/\D/g, '');
+    
+    // If number now starts with the country code, it's likely an international number without the `+`.
+    // E.g. user entered "20 101 234 5678"
+    if (numericPhone.startsWith('20')) {
+        // Just add the plus and we're done.
+        return `+${numericPhone}`;
+    }
+    
     // Handle local numbers that start with 0 (e.g., 010, 011)
     if (numericPhone.startsWith('0')) {
         numericPhone = numericPhone.substring(1);
     }
+    
     return `+20${numericPhone}`;
 };
 
