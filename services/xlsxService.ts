@@ -52,3 +52,65 @@ export const exportToExcel = (students: Student[], fileName:string): void => {
 
   XLSX.writeFile(workbook, `${fileName}.xlsx`);
 };
+
+export const importFromExcel = (file: File): Promise<{ studentName: string; phoneNumber: string; }[]> => {
+  return new Promise((resolve, reject) => {
+    if (typeof XLSX === 'undefined') {
+      console.error("XLSX library is not loaded.");
+      reject(new Error("XLSX library is not loaded."));
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = event.target?.result;
+        const workbook = XLSX.read(data, { type: 'binary' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        
+        if (!json || json.length < 1) {
+          reject(new Error("ملف Excel فارغ أو لا يحتوي على صفوف."));
+          return;
+        }
+
+        const headerRow = (json[0] as any[]) || [];
+        // Make header matching more robust by trimming whitespace and handling non-string values
+        const nameIndex = headerRow.findIndex(h => h && h.toString().trim().includes('اسم الطالب'));
+        const phoneIndex = headerRow.findIndex(h => h && h.toString().trim().includes('رقم التليفون'));
+
+        if (nameIndex === -1 || phoneIndex === -1) {
+          const missingColumns: string[] = [];
+          if (nameIndex === -1) missingColumns.push("'اسم الطالب'");
+          if (phoneIndex === -1) missingColumns.push("'رقم التليفون'");
+          
+          reject(new Error(`الملف يجب أن يحتوي على الأعمدة التالية: ${missingColumns.join(' و ')}.`));
+          return;
+        }
+
+        const importedStudents = (json.slice(1) as (string|number)[][])
+          .map(row => {
+            // Ensure row is an array before trying to access by index
+            if (!Array.isArray(row)) return null;
+            return {
+              studentName: (row[nameIndex] || '').toString().trim(),
+              phoneNumber: (row[phoneIndex] || '').toString().trim(),
+            }
+          })
+          .filter((student): student is { studentName: string; phoneNumber: string; } => 
+            student !== null && !!student.studentName && !!student.phoneNumber
+          );
+
+        resolve(importedStudents);
+      } catch (error) {
+        console.error("Error parsing Excel file:", error);
+        reject(new Error("حدث خطأ أثناء قراءة ملف Excel. تأكد من أن الملف غير تالف."));
+      }
+    };
+    reader.onerror = (error) => {
+      reject(error);
+    };
+    reader.readAsBinaryString(file);
+  });
+};

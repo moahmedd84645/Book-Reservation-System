@@ -1,19 +1,35 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Student } from './types';
 import { useLocalStorage } from './hooks/useLocalStorage';
-import { exportToExcel } from './services/xlsxService';
+import { exportToExcel, importFromExcel } from './services/xlsxService';
 import StudentForm from './components/ReservationForm';
 import StudentsTable from './components/ReservationsTable';
-import { DownloadIcon, TagIcon, SearchIcon } from './components/Icons';
+import BulkAddModal from './components/BulkAddModal';
+import { DownloadIcon, TagIcon, SearchIcon, UsersIcon, UploadIcon } from './components/Icons';
 
 function App() {
   const [students, setStudents] = useLocalStorage<Student[]>('students', []);
   const [studentCounter, setStudentCounter] = useLocalStorage<number>('studentCounter', 0);
   const [prefix, setPrefix] = useLocalStorage<string>('studentCodePrefix', 'MTD25');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isBulkAddModalOpen, setIsBulkAddModalOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const isDuplicate = (name: string, phone: string, currentStudents: Student[]): boolean => {
+    const existingStudents = [...students, ...currentStudents];
+    return existingStudents.some(s => 
+        s.studentName.trim().toLowerCase() === name.trim().toLowerCase() && 
+        s.phoneNumber.trim() === phone.trim()
+    );
+  };
 
   const handleAddStudent = (newStudentData: Omit<Student, 'studentCode'>) => {
+    if (isDuplicate(newStudentData.studentName, newStudentData.phoneNumber, [])) {
+        alert("بيانات مكررة: هذا الطالب موجود بالفعل بنفس الاسم ورقم التليفون.");
+        return;
+    }
+    
     const nextId = studentCounter + 1;
     const paddedId = String(nextId).padStart(2, '0');
     const newStudentCode = `${prefix.trim() || 'CODE'}-${paddedId}`;
@@ -23,8 +39,75 @@ function App() {
       studentCode: newStudentCode,
     };
     
-    setStudents(prev => [...prev, newStudent]);
+    setStudents(prev => [newStudent, ...prev]);
     setStudentCounter(nextId);
+  };
+  
+  const processNewStudents = (studentsToAdd: {studentName: string, phoneNumber: string}[]) => {
+    let addedCount = 0;
+    let skippedCount = 0;
+    let currentCounter = studentCounter;
+    const newStudents: Student[] = [];
+
+    studentsToAdd.forEach(studentData => {
+        if (!studentData.studentName || !/^\d{7,15}$/.test(studentData.phoneNumber)) {
+            skippedCount++;
+            return;
+        }
+        if (isDuplicate(studentData.studentName, studentData.phoneNumber, newStudents)) {
+            skippedCount++;
+            return;
+        }
+
+        currentCounter++;
+        const paddedId = String(currentCounter).padStart(2, '0');
+        const newStudentCode = `${prefix.trim() || 'CODE'}-${paddedId}`;
+        newStudents.push({
+            ...studentData,
+            studentCode: newStudentCode,
+            timestamp: new Date().toISOString()
+        });
+        addedCount++;
+    });
+
+    if (newStudents.length > 0) {
+        setStudents(prev => [...newStudents.reverse(), ...prev]);
+        setStudentCounter(currentCounter);
+    }
+    
+    alert(`اكتملت العملية.\n- تمت إضافة ${addedCount} طالبًا بنجاح.\n- تم تخطي ${skippedCount} طالبًا (بيانات غير مكتملة أو مكررة).`);
+  };
+
+  const handleBulkAdd = (text: string) => {
+    const lines = text.split('\n').filter(line => line.trim() !== '');
+    const studentsToAdd = lines.map(line => {
+        const parts = line.split(',');
+        const name = parts[0]?.trim() || '';
+        const phone = parts.slice(1).join(',').trim() || ''; // Handle commas in name
+        return { studentName: name, phoneNumber: phone };
+    });
+    processNewStudents(studentsToAdd);
+  };
+  
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+        const studentsData = await importFromExcel(file);
+        processNewStudents(studentsData);
+    } catch (error) {
+        console.error(error);
+        alert((error as Error).message || "حدث خطأ أثناء معالجة الملف.");
+    } finally {
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    }
+  };
+
+  const triggerFileImport = () => {
+    fileInputRef.current?.click();
   };
 
   const handleDeleteStudent = (studentCodeToDelete: string) => {
@@ -38,7 +121,6 @@ function App() {
         alert("لا توجد بيانات لتصديرها.");
         return;
     }
-    // Sort a copy of the array by timestamp in descending order (newest first) for the export
     const sortedForExport = [...students].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     exportToExcel(sortedForExport, 'بيانات_الطلاب');
   };
@@ -46,7 +128,7 @@ function App() {
   const filteredStudents = students.filter(student => 
     student.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     student.studentCode.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  ).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
   return (
     <div className="bg-gray-100 min-h-screen">
@@ -80,16 +162,39 @@ function App() {
           <StudentForm onAddStudent={handleAddStudent} />
 
           <section className="w-full max-w-5xl bg-white p-6 rounded-xl shadow-lg">
-             <div className="flex justify-between items-center mb-4">
+             <div className="flex flex-wrap gap-4 justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold text-gray-800">قائمة الطلاب</h2>
-                <button
-                    onClick={handleExport}
-                    disabled={students.length === 0}
-                    className="flex items-center bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-300 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed"
-                >
-                    <DownloadIcon />
-                    <span className="mr-2">تصدير إلى Excel</span>
-                </button>
+                <div className="flex flex-wrap gap-2">
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileChange}
+                        accept=".xlsx, .xls"
+                        className="hidden"
+                    />
+                    <button
+                        onClick={triggerFileImport}
+                        className="flex items-center bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-300 transition-all"
+                    >
+                        <UploadIcon />
+                        <span className="mr-2">استيراد من Excel</span>
+                    </button>
+                    <button
+                        onClick={() => setIsBulkAddModalOpen(true)}
+                        className="flex items-center bg-teal-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-700 focus:outline-none focus:ring-4 focus:ring-teal-300 transition-all"
+                    >
+                        <UsersIcon />
+                        <span className="mr-2">إضافة دفعة</span>
+                    </button>
+                    <button
+                        onClick={handleExport}
+                        disabled={students.length === 0}
+                        className="flex items-center bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-300 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    >
+                        <DownloadIcon />
+                        <span className="mr-2">تصدير إلى Excel</span>
+                    </button>
+                </div>
              </div>
              <div className="mb-4 relative">
                 <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
@@ -107,7 +212,11 @@ function App() {
              <StudentsTable students={filteredStudents} onDeleteStudent={handleDeleteStudent} />
           </section>
         </main>
-
+         <BulkAddModal 
+            isOpen={isBulkAddModalOpen} 
+            onClose={() => setIsBulkAddModalOpen(false)} 
+            onBulkAdd={handleBulkAdd}
+         />
          <footer className="text-center mt-12 text-gray-500">
             <p>&copy; {new Date().getFullYear()} نظام إدخال بيانات الطلاب. جميع الحقوق محفوظة.</p>
         </footer>
