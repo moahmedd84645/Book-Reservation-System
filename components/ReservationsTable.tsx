@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Student } from '../types';
-import { TrashIcon } from './Icons';
+import { TrashIcon, WhatsAppIcon } from './Icons';
 
 interface StudentsTableProps {
   students: Student[];
@@ -37,13 +37,26 @@ const StudentsTable: React.FC<StudentsTableProps> = ({ students, onDeleteStudent
               <td className="py-4 px-6 whitespace-nowrap">{student.studentCode}</td>
               <td className="py-4 px-6 whitespace-nowrap">{new Date(student.timestamp).toLocaleString('ar-EG')}</td>
               <td className="py-4 px-6 whitespace-nowrap text-center">
-                  <button 
-                    onClick={() => onDeleteStudent(student.studentCode)}
-                    className="text-red-600 hover:text-red-800 transition-colors p-2 rounded-full hover:bg-red-100"
-                    aria-label={`حذف الطالب ${student.studentName}`}
-                  >
-                      <TrashIcon />
-                  </button>
+                <div className="flex items-center justify-center gap-2">
+                    <a
+                        href={`https://wa.me/${student.phoneNumber}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-green-600 hover:text-green-800 transition-colors p-2 rounded-full hover:bg-green-100"
+                        aria-label={`إرسال رسالة واتساب إلى ${student.studentName}`}
+                        title="إرسال رسالة واتساب"
+                    >
+                        <WhatsAppIcon />
+                    </a>
+                    <button 
+                        onClick={() => onDeleteStudent(student.studentCode)}
+                        className="text-red-600 hover:text-red-800 transition-colors p-2 rounded-full hover:bg-red-100"
+                        aria-label={`حذف الطالب ${student.studentName}`}
+                        title="حذف الطالب"
+                    >
+                        <TrashIcon />
+                    </button>
+                </div>
               </td>
             </tr>
           ))}

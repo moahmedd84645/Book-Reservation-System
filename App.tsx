@@ -16,16 +16,17 @@ function App() {
   const [isBulkAddModalOpen, setIsBulkAddModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const isDuplicate = (name: string, phone: string, currentStudents: Student[]): boolean => {
+  const isDuplicate = (studentToCheck: { studentName: string; phoneNumber: string; studentCode?: string }, currentStudents: Student[]): boolean => {
     const existingStudents = [...students, ...currentStudents];
     return existingStudents.some(s => 
-        s.studentName.trim().toLowerCase() === name.trim().toLowerCase() && 
-        s.phoneNumber.trim() === phone.trim()
+        (s.studentName.trim().toLowerCase() === studentToCheck.studentName.trim().toLowerCase() && 
+         s.phoneNumber.trim() === studentToCheck.phoneNumber.trim()) ||
+        (studentToCheck.studentCode ? s.studentCode.trim().toLowerCase() === studentToCheck.studentCode.trim().toLowerCase() : false)
     );
   };
 
   const handleAddStudent = (newStudentData: Omit<Student, 'studentCode'>) => {
-    if (isDuplicate(newStudentData.studentName, newStudentData.phoneNumber, [])) {
+    if (isDuplicate({ studentName: newStudentData.studentName, phoneNumber: newStudentData.phoneNumber }, [])) {
         alert("بيانات مكررة: هذا الطالب موجود بالفعل بنفس الاسم ورقم التليفون.");
         return;
     }
@@ -54,7 +55,7 @@ function App() {
             skippedCount++;
             return;
         }
-        if (isDuplicate(studentData.studentName, studentData.phoneNumber, newStudents)) {
+        if (isDuplicate({ studentName: studentData.studentName, phoneNumber: studentData.phoneNumber }, newStudents)) {
             skippedCount++;
             return;
         }
